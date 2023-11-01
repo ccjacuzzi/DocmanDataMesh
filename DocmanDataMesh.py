@@ -1,15 +1,20 @@
 import csv
 import pyodbc
+import requests
 import re
 
-# Define your CSV file and Azure SQL Database connection details
-csv_file = 'D:\Microsoft SQL Studio Stuff\Inventory.csv'
+# Define the CSV file and Azure SQL Database connection details
+csv_file = './Inventory.csv'
 server = 'labelcloud-sql-production-deploc5-user.database.windows.net'
 database = 'docman'
 username = 'admin'
 password = 'Docman927'
 table_name1 = 'InventoryTable'
-table_name2 = 'TestResults'
+table_name2 = 'sample_data'
+
+# Define the API endpoint & Token
+api_endpoint = 'https://qwc2nuifoe.execute-api.us-east-1.amazonaws.com/v1/ar/label/'
+api_token = 'q3o4rutgsdiofbuj!sh'
 
 # Create a connection to the Azure SQL Database
 conn = pyodbc.connect(f'DRIVER=ODBC Driver 17 for SQL Server;SERVER={server};DATABASE={database};UID={username};PWD={password}')
@@ -35,11 +40,79 @@ with open(csv_file, 'r', encoding='utf-8-sig') as csv_file:
                 sanitized_names.append(name)
         return sanitized_names
     
+    def make_api_call(inventory_id):
+        headers = {
+            'Authorization': f'{api_token}'
+        }
+        appended_api_endpoint = f'{api_endpoint}{inventory_id}'
+        response = requests.get(appended_api_endpoint, headers=headers)
+        print(f"API ENDPOINT: {appended_api_endpoint}")
+        if response.status_code == 200:
+            
+            response = response.json()
+            
+            print(f"FUCKING RESPONSE: {response}")
+            
+            insert_sample_data_sql = f"INSERT INTO {table_name2} " \
+                f"(sample_id, bt_sample_id, order_date_received, sample_name, s_matrix, order_id, package_mass, servings, " \
+                f"final_cbc_mg_g, final_cbc_mg_g_dry, final_cbc_perc, final_cbc_perc_dry, final_cbc_mg_pkg, final_cbc_mg_serving, " \
+                f"final_cbd_mg_g, final_cbd_mg_g_dry, final_cbd_perc, final_cbd_perc_dry, final_cbd_mg_pkg, final_cbd_mg_serving, " \
+                f"final_cbda_mg_g, final_cbda_mg_g_dry, final_cbda_perc, final_cbda_perc_dry, final_cbda_mg_pkg, final_cbda_mg_serving, " \
+                f"final_cbdv_mg_g, final_cbdv_mg_g_dry, final_cbdv_perc, final_cbdv_perc_dry, final_cbdv_mg_pkg, final_cbdv_mg_serving, " \
+                f"final_cbg_mg_g, final_cbg_mg_g_dry, final_cbg_perc, final_cbg_perc_dry, final_cbg_mg_pkg, final_cbg_mg_serving, " \
+                f"final_cbga_mg_g, final_cbga_mg_g_dry, final_cbga_perc, final_cbga_perc_dry, final_cbga_mg_pkg, final_cbga_mg_serving, " \
+                f"final_cbn_mg_g, final_cbn_mg_g_dry, final_cbn_perc, final_cbn_perc_dry, final_cbn_mg_pkg, final_cbn_mg_serving, " \
+                f"final_d8_thc_mg_g, final_d8_thc_mg_g_dry, final_d8_thc_perc, final_d8_thc_perc_dry, final_d8_thc_mg_pkg, final_d8_thc_mg_serving, " \
+                f"final_thc_mg_g, final_thc_mg_g_dry, final_thc_perc, final_thc_perc_dry, final_thc_mg_pkg, final_thc_mg_serving, " \
+                f"final_thca_mg_g, final_thca_mg_g_dry, final_thca_perc, final_thca_perc_dry, final_thca_mg_pkg, final_thca_mg_serving, " \
+                f"final_thcv_mg_g, final_thcv_mg_g_dry, final_thcv_perc, final_thcv_perc_dry, final_thcv_mg_pkg, final_thcv_mg_serving, " \
+                f"final_total_canna_mg_g, final_total_canna_mg_g_dry, final_total_canna_perc, final_total_canna_perc_dry, final_total_canna_mg_pkg, final_total_canna_mg_serving, " \
+                f"final_total_cbd_mg_g, final_total_cbd_mg_g_dry, final_total_cbd_perc, final_total_cbd_perc_dry, final_total_cbd_mg_pkg, final_total_cbd_mg_serving, " \
+                f"final_total_thc_mg_g, final_total_thc_mg_g_dry, final_total_thc_perc, final_total_thc_perc_dry, final_total_thc_mg_pkg, final_total_thc_mg_serving, " \
+                f"final_a_pinene_perc, final_b_pinene_perc, final_b_myrcene_perc, final_limonene_perc, final_terpinolene_perc, final_linalool_perc, " \
+                f"final_b_caryophyllene_perc, final_a_humulene_perc, final_caryophyllene_oxide_perc, final_a_bisabolol_perc, final_camphene_perc, " \
+                f"final_3_carene_perc, final_cymene_perc, final_eucalyptol_perc, final_geraniol_perc, final_guaiol_perc, final_trans_nerolidol_perc, " \
+                f"final_cis_b_ocimene_perc, final_a_terpinene_perc, final_y_terpinene_perc, final_total_terp_perc) " \
+                f"VALUES " \
+                f"('{response['sample_id']}', '{response['bt_sample_id']}', '{response['order_date_received']}', " \
+                f"'{response['sample_name']}', '{response['s_matrix']}', {response['order_id']}, " \
+                f"{response['package_mass']}, {response['servings']}, " \
+                f"{response['final_cbc_mg_g']}, {response['final_cbc_mg_g_dry']}, {response['final_cbc_perc']}, {response['final_cbc_perc_dry']}, {response['final_cbc_mg_pkg']}, {response['final_cbc_mg_serving']}, " \
+                f"{response['final_cbd_mg_g']}, {response['final_cbd_mg_g_dry']}, {response['final_cbd_perc']}, {response['final_cbd_perc_dry']}, {response['final_cbd_mg_pkg']}, {response['final_cbd_mg_serving']}, " \
+                f"{response['final_cbda_mg_g']}, {response['final_cbda_mg_g_dry']}, {response['final_cbda_perc']}, {response['final_cbda_perc_dry']}, {response['final_cbda_mg_pkg']}, {response['final_cbda_mg_serving']}, " \
+                f"{response['final_cbdv_mg_g']}, {response['final_cbdv_mg_g_dry']}, {response['final_cbdv_perc']}, {response['final_cbdv_perc_dry']}, {response['final_cbdv_mg_pkg']}, {response['final_cbdv_mg_serving']}, " \
+                f"{response['final_cbg_mg_g']}, {response['final_cbg_mg_g_dry']}, {response['final_cbg_perc']}, {response['final_cbg_perc_dry']}, {response['final_cbg_mg_pkg']}, {response['final_cbg_mg_serving']}, " \
+                f"{response['final_cbga_mg_g']}, {response['final_cbga_mg_g_dry']}, {response['final_cbga_perc']}, {response['final_cbga_perc_dry']}, {response['final_cbga_mg_pkg']}, {response['final_cbga_mg_serving']}, " \
+                f"{response['final_cbn_mg_g']}, {response['final_cbn_mg_g_dry']}, {response['final_cbn_perc']}, {response['final_cbn_perc_dry']}, {response['final_cbn_mg_pkg']}, {response['final_cbn_mg_serving']}, " \
+                f"{response['final_d8_thc_mg_g']}, {response['final_d8_thc_mg_g_dry']}, {response['final_d8_thc_perc']}, {response['final_d8_thc_perc_dry']}, {response['final_d8_thc_mg_pkg']}, {response['final_d8_thc_mg_serving']}, " \
+                f"{response['final_thc_mg_g']}, {response['final_thc_mg_g_dry']}, {response['final_thc_perc']}, {response['final_thc_perc_dry']}, {response['final_thc_mg_pkg']}, {response['final_thc_mg_serving']}, " \
+                f"{response['final_thca_mg_g']}, {response['final_thca_mg_g_dry']}, {response['final_thca_perc']}, {response['final_thca_perc_dry']}, {response['final_thca_mg_pkg']}, {response['final_thca_mg_serving']}, " \
+                f"{response['final_thcv_mg_g']}, {response['final_thcv_mg_g_dry']}, {response['final_thcv_perc']}, {response['final_thcv_perc_dry']}, {response['final_thcv_mg_pkg']}, {response['final_thcv_mg_serving']}, " \
+                f"{response['final_total_canna_mg_g']}, {response['final_total_canna_mg_g_dry']}, {response['final_total_canna_perc']}, {response['final_total_canna_perc_dry']}, {response['final_total_canna_mg_pkg']}, {response['final_total_canna_mg_serving']}, " \
+                f"{response['final_total_cbd_mg_g']}, {response['final_total_cbd_mg_g_dry']}, {response['final_total_cbd_perc']}, {response['final_total_cbd_perc_dry']}, {response['final_total_cbd_mg_pkg']}, {response['final_total_cbd_mg_serving']}, " \
+                f"{response['final_total_thc_mg_g']}, {response['final_total_thc_mg_g_dry']}, {response['final_total_thc_perc']}, {response['final_total_thc_perc_dry']}, {response['final_total_thc_mg_pkg']}, {response['final_total_thc_mg_serving']}, " \
+                f"{response['final_a_pinene_perc']}, {response['final_b_pinene_perc']}, {response['final_b_myrcene_perc']}, " \
+                f"{response['final_limonene_perc']}, {response['final_terpinolene_perc']}, {response['final_linalool_perc']}, " \
+                f"{response['final_b_caryophyllene_perc']}, {response['final_a_humulene_perc']}, {response['final_caryophyllene_oxide_perc']}, " \
+                f"{response['final_a_bisabolol_perc']}, {response['final_camphene_perc']}, {response['final_3_carene_perc']}, " \
+                f"{response['final_cymene_perc']}, {response['final_eucalyptol_perc']}, {response['final_geraniol_perc']}, " \
+                f"{response['final_guaiol_perc']}, {response['final_trans_nerolidol_perc']}, {response['final_cis_b_ocimene_perc']}, " \
+                f"{response['final_a_terpinene_perc']}, {response['final_y_terpinene_perc']}, {response['final_total_terp_perc']});"
+            
+            print(f"SQL STATEMENT: {insert_sample_data_sql}")
+            cursor.execute(insert_sample_data_sql)
+
+        else:
+            print(f"API is FUCKED! Status code: {response.status_code}")
+
     for row in csv_reader:
 
         try:
             # Remove spaces from Inventory_ID column entries
             row['Inventory ID'] = row['Inventory ID'].replace(" ", "")
+
+            # Call Test Results API
+            #make_api_call(row['Inventory ID'])
 
             # TODO: Call test results API appending the value in the Inventory ID column to the api endpoint
             # TODO: Parse the JSON response and INSERT into a db table
