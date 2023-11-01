@@ -40,6 +40,7 @@ with open(csv_file, 'r', encoding='utf-8-sig') as csv_file:
                 sanitized_names.append(name)
         return sanitized_names
     
+    # This function performs the API call and returns the response
     def make_api_call(inventory_id):
         headers = {
             'Authorization': f'{api_token}'
@@ -50,10 +51,21 @@ with open(csv_file, 'r', encoding='utf-8-sig') as csv_file:
         if response.status_code == 200:
             
             response = response.json()
+            print(f"RESPONSE: {response}")
+                        
+            # Insert JSON response body into test_results table
+            insert_sample_data(record)
             
             print(f"FUCKING RESPONSE: {response}")
             
-            insert_sample_data_sql = f"INSERT INTO {table_name2} " \
+        else:
+            print(f"API is FUCKED! Status code: {response.status_code}")
+
+        return response
+    
+    # This function takes the response from the api for one Invetory ID and inserts it into the db
+    def insert_sample_data(response):
+        insert_sample_data_sql = f"INSERT INTO {table_name2} " \
                 f"(sample_id, bt_sample_id, order_date_received, sample_name, s_matrix, order_id, package_mass, servings, " \
                 f"final_cbc_mg_g, final_cbc_mg_g_dry, final_cbc_perc, final_cbc_perc_dry, final_cbc_mg_pkg, final_cbc_mg_serving, " \
                 f"final_cbd_mg_g, final_cbd_mg_g_dry, final_cbd_perc, final_cbd_perc_dry, final_cbd_mg_pkg, final_cbd_mg_serving, " \
@@ -99,11 +111,8 @@ with open(csv_file, 'r', encoding='utf-8-sig') as csv_file:
                 f"{response['final_guaiol_perc']}, {response['final_trans_nerolidol_perc']}, {response['final_cis_b_ocimene_perc']}, " \
                 f"{response['final_a_terpinene_perc']}, {response['final_y_terpinene_perc']}, {response['final_total_terp_perc']});"
             
-            print(f"SQL STATEMENT: {insert_sample_data_sql}")
-            cursor.execute(insert_sample_data_sql)
-
-        else:
-            print(f"API is FUCKED! Status code: {response.status_code}")
+        print(f"SQL STATEMENT: {insert_sample_data_sql}")
+        cursor.execute(insert_sample_data_sql)
 
     for row in csv_reader:
 
@@ -111,10 +120,9 @@ with open(csv_file, 'r', encoding='utf-8-sig') as csv_file:
             # Remove spaces from Inventory_ID column entries
             row['Inventory ID'] = row['Inventory ID'].replace(" ", "")
 
-            # Call Test Results API
-            #make_api_call(row['Inventory ID'])
+            # Call Test Results API passing in the current Inventory ID
+            record = make_api_call(row['Inventory ID'])
 
-            # TODO: Call test results API appending the value in the Inventory ID column to the api endpoint
             # TODO: Parse the JSON response and INSERT into a db table
 
             # When the CSV was read, all values were stored as strings. We must make sure they are in the correct datatype befor inserting into db        
