@@ -4,7 +4,7 @@ import requests
 import re
 
 # Define the CSV file and Azure SQL Database connection details
-csv_file = './Inventory.csv'
+csv_file = './InventoryNov14.csv'
 server = 'labelcloud-sql-production-deploc5-user.database.windows.net'
 database = 'docman'
 username = 'admin'
@@ -23,6 +23,10 @@ conn = pyodbc.connect(f'DRIVER=ODBC Driver 17 for SQL Server;SERVER={server};DAT
 cursor = conn.cursor()
 
 # #### MAIN ###################################################################################################################### 
+
+# Clear Database Tables - Does is make sense to clear the db tables, or do we need all data to remain in NiceLabel?
+
+
 # Open the CSV file for reading
 ### encoding=utf-8-sig needed to avoid including the UTF-8 byte order mark
 with open(csv_file, 'r', encoding='utf-8-sig') as csv_file:
@@ -159,7 +163,7 @@ with open(csv_file, 'r', encoding='utf-8-sig') as csv_file:
 
             # Construct the SQL INSERT statement
             columns = ', '.join(sanitize_column_names(column_names))
-            values = ', '.join(sanitized_values)
+            values = ', '.join(map(str, sanitized_values))
             insert_sql = f"INSERT INTO {table_name1} ({columns}) VALUES ({values});"
 
             # Print the SQL statement for review
